@@ -2,10 +2,12 @@
 
 namespace Simpl;
 
+use PDO;
+
 class SQL
 {
 	/**
-	 * @var \PDO
+	 * @var PDO
 	 */
 	public $pdo;
 
@@ -27,13 +29,13 @@ class SQL
 		}
 
 		$options = [
-			\PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
-			\PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
-			\PDO::ATTR_EMULATE_PREPARES   => false,
+			PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+			PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+			PDO::ATTR_EMULATE_PREPARES   => false,
 		];
 
 		try {
-			$this->pdo = new \PDO($dsn, $user, $pass, $options);
+			$this->pdo = new PDO($dsn, $user, $pass, $options);
 		} catch (\PDOException $e) {
 			throw new \PDOException($e->getMessage(), (int)$e->getCode());
 		}
@@ -50,7 +52,6 @@ class SQL
 		if (empty($params)) {
 			return $this->pdo->query($sql);
 		} else {
-
 			if (is_scalar($params)) {
 				$params = array($params);
 			}
@@ -67,12 +68,11 @@ class SQL
 	 * @param int $mode
 	 * @return array
 	 */
-	public function fetchAll($sql, $params = array(), $mode = \PDO::FETCH_ASSOC)
+	public function fetchAll($sql, $params = array(), $mode = PDO::FETCH_ASSOC)
 	{
 		if (empty($params)) {
 			return $this->pdo->query($sql)->fetchAll($mode);
 		} else {
-
 			if (is_scalar($params)) {
 				$params = array($params);
 			}
@@ -90,7 +90,7 @@ class SQL
 	 */
 	public function fetchColumn($sql, $params = array())
 	{
-		return $this->fetchAll($sql, $params, \PDO::FETCH_COLUMN);
+		return $this->fetchAll($sql, $params, PDO::FETCH_COLUMN);
 	}
 
 	/**
@@ -104,7 +104,6 @@ class SQL
 		if (empty($params)) {
 			return $this->pdo->exec($sql);
 		} else {
-
 			if (is_scalar($params)) {
 				$params = array($params);
 			}
@@ -141,13 +140,13 @@ class SQL
 	{
 		$sql = "update $table set ";
 
-		foreach ($parts as $field=>$val) {
+		foreach ($parts as $field => $val) {
 			$sql.="$field = " . $this->pdo->quote($val) . ", ";
 		}
 
 		$sql = preg_replace("/, $/", "", $sql);
 
-		if($condition){
+		if ($condition) {
 			$sql.=' where ' . $condition;
 		}
 		return $sql;
@@ -167,7 +166,7 @@ class SQL
 		$sql = "insert into $table (";
 		$sql2 = '' ;
 
-		foreach ($parts as $field=>$val) {
+		foreach ($parts as $field => $val) {
 			$sql.=$field . ', ';
 
 			if ($val === null) {
@@ -195,7 +194,7 @@ class SQL
 		$sql = "replace into $table (";
 		$sql2 = '';
 
-		foreach ($parts as $field=>$val) {
+		foreach ($parts as $field => $val) {
 			$sql.=$field . ', ';
 
 			if ($val === null) {
