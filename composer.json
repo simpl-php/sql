@@ -24,7 +24,7 @@
         }
     },
     "require": {
-        "php": ">= 5.1.0",
+        "php": ">=5.1.0",
         "ext-pdo": "*"
     },
     "minimum-stability": "dev",
