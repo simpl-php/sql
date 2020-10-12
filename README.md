@@ -1,5 +1,8 @@
 # Simple/SQL
 
+[![Build Status](https://img.shields.io/travis/simpl-php/sql.svg?style=flat-square)](https://travis-ci.org/simpl-php/sql)
+
+
 A dead-simple layer on top of PDO to make PDO setup and querying simpler
 
 ## Installation
