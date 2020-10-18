@@ -1,6 +1,7 @@
 <?php
 namespace Tests;
 
+use PDO;
 use PHPUnit\Framework\TestCase;
 use Simpl\SQL;
 
@@ -130,5 +131,26 @@ class ConnectionTest extends TestCase
 
 		$this->assertEquals('testuser', $connection->username);
 		$this->assertEquals('testpassword', $connection->password);
+	}
+
+	public function testCanOverrideConnectionOptions()
+	{
+		$config = [
+			'prefix' => 'sqlite',
+			'path' => ':memory:',
+			'options' => [
+				PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+				PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ,
+				PDO::ATTR_EMULATE_PREPARES   => false,
+			],
+		];
+
+		$db = new SQL($config);
+		$db->pdo->exec('create table foo(id INTEGER PRIMARY KEY AUTOINCREMENT, mytext varchar, mydate datetime)');
+		$db->pdo->exec("insert into foo (mytext, mydate) values ('bar', '2020-01-01')");
+		$result = $db->query("select * from foo")->fetch();
+		$this->assertTrue(is_object($result), 'Result should be an object.');
+		$this->assertObjectHasAttribute('mytext', $result);
+		$this->assertEquals('bar', $result->mytext);
 	}
 }

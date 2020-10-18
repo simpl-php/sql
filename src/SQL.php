@@ -33,6 +33,11 @@ class SQL
 
 		$this->dsn = self::buildDsn($config, $dbname);
 
+		// Get options from the config array, if available.
+		if (empty($options) && isset($config['options'])){
+			$options = $config['options'];
+		}
+
 		if (empty($options)){
 			$options = [
 				PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
