@@ -2,6 +2,7 @@
 
 namespace Simpl;
 
+use Exception;
 use PDO;
 
 class SQL
@@ -10,34 +11,52 @@ class SQL
 	 * @var PDO
 	 */
 	public $pdo;
+	public $dsn;
+	public $username;
+	public $password;
+	public $throw_exception;
+	public $exception;
 
 	/**
 	 * SQL constructor.
-	 * @param $host
-	 * @param $db
-	 * @param null $user
-	 * @param null $pass
+	 * @param mixed $config Host or DSN Array.
+	 * @param null $dbname
+	 * @param null $username
+	 * @param null $password
+	 * @param array $options
+	 * @param bool $throw Should we throw exceptions? Useful for unit testing to disable throwing exceptions.
+	 * @throws Exception
 	 */
-	public function __construct($host, $db, $user = null, $pass = null)
+	public function __construct($config, $dbname = null, $username = null, $password = null, $options = [], $throw = true)
 	{
-		$charset = 'utf8mb4';
+		$this->throw_exception = $throw;
 
-		if ($host == 'sqlite') {
-			$dsn = "sqlite:$db";
-		} else {
-			$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+		$this->dsn = self::buildDsn($config, $dbname);
+
+		if (empty($options)){
+			$options = [
+				PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+				PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+				PDO::ATTR_EMULATE_PREPARES   => false,
+			];
 		}
 
-		$options = [
-			PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-			PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-			PDO::ATTR_EMULATE_PREPARES   => false,
-		];
+		if (empty($username) && isset($config['username'])){
+			$username = $config['username'];
+		}
+
+		if (empty($password) && isset($config['password'])){
+			$password = $config['password'];
+		}
+
+		# Save username/password as class properties for testability.
+		$this->username = $username;
+		$this->password = $password;
 
 		try {
-			$this->pdo = new PDO($dsn, $user, $pass, $options);
+			$this->pdo = new PDO($this->dsn, $username, $password, $options);
 		} catch (\PDOException $e) {
-			throw new \PDOException($e->getMessage(), (int)$e->getCode());
+			return $this->handleException($e);
 		}
 	}
 
@@ -206,5 +225,95 @@ class SQL
 		$sql = preg_replace("/, $/", "", $sql);
 		$sql2 = preg_replace("/, $/", "", $sql2);
 		return $sql . ')values(' . $sql2 . ')';
+	}
+
+	public static function buildDsn($host, $dbname = null, $port = null, $prefix = 'mysql', $charset = 'utf8mb4')
+	{
+		if (is_array($host))
+		{
+			$dsn = self::buildDsnFromArray($host);
+		} elseif ($host == 'sqlite') {
+			$dsn = self::buildDsnFromArray(
+				[
+					'prefix' => $host,
+					'path' => $dbname
+				]
+			);
+		} else {
+			$dsn = self::buildDsnFromArray(
+				[
+					'prefix' => $prefix,
+					'host' => $host,
+					'port' => $port,
+					'dbname' => $dbname,
+					'charset' => $charset
+				]
+			);
+		}
+
+		return $dsn;
+	}
+
+	/**
+	 * @param $options
+	 * @return string
+	 * @throws Exception
+	 */
+	public static function buildDsnFromArray($options)
+	{
+		$prefix = isset($options['prefix']) ? $options['prefix'] : 'mysql';
+
+		$parts = [];
+
+		if (preg_match('/sqlite/', $prefix)){
+			if (!isset($options['path'])){
+				throw new Exception("sqlite path must be set in options.");
+			}
+			return $prefix . ':' . $options['path'];
+		}
+
+		$keys = ['unix_socket', 'host', 'port', 'dbname', 'charset'];
+
+		foreach($keys as $key){
+			if (isset($options[$key]) && !empty($options[$key])){
+				$parts[$key] = sprintf('%s=%s', $key, $options[$key]);
+			}
+		}
+
+		return $prefix . ':' . join(';', $parts);
+	}
+
+	public function getDsn()
+	{
+		return $this->dsn;
+	}
+
+	public function getPdo()
+	{
+		return $this->pdo;
+	}
+
+	/**
+	 * @param Exception $exception
+	 * @return SQL
+	 * @throws Exception
+	 */
+	protected function handleException(Exception $exception)
+	{
+		$this->exception = $exception;
+
+		if ($this->throw_exception){
+			throw $exception;
+		} else{
+			return $this;
+		}
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function hasException()
+	{
+		return $this->exception !== null;
 	}
 }

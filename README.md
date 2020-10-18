@@ -20,8 +20,25 @@ composer require simpl/sql
 ## Usage
 
 ### Connecting to the database.
+
+#### Basic connection
+
 ```php
 $db = new \Simpl\SQL('localhost', 'your-db-name', 'your-username', 'your-password');
+```
+
+#### Connection with configuration array.
+
+```php
+$config = [
+    'prefix' => 'mysql',
+    'host' => 'localhost',
+    'port' => 3306,
+    'dbname' => 'your-db-name',
+    'username' => 'your-username',
+    'password' => 'your-password'
+];
+$db = new \Simpl\SQL($config);
 ```
 
 ### Running a SELECT query with parameters.
