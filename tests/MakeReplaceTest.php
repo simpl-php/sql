@@ -1,4 +1,5 @@
 <?php
+namespace Tests;
 use Tests\SQLTest;
 
 class MakeReplaceTest extends SQLTest
@@ -12,7 +13,7 @@ class MakeReplaceTest extends SQLTest
 			'mydate' => null
 		];
 
-		$expected = "replace into foo (mytext, mydate)values('Bar', NULL)";
+		$expected = "replace into foo (mytext, mydate) values ('Bar', NULL)";
 		$actual = $db->makeReplace('foo', $data);
 
 		$db->exec($actual);
@@ -32,7 +33,7 @@ class MakeReplaceTest extends SQLTest
 			'mydate' => ''
 		];
 
-		$expected = "insert into foo (mytext, mydate)values('Bar', '')";
+		$expected = "insert into foo (mytext, mydate) values ('Bar', '')";
 		$actual = $db->makeInsert('foo', $data);
 
 		$db->exec($actual);

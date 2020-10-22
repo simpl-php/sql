@@ -143,11 +143,16 @@ class SQL
 	 * @param $sql
 	 * @param array $params
 	 * @return string
+	 * @throws Exception
 	 */
 	public function insert($sql, $params = array())
 	{
-		$result = $this->exec($sql, $params);
-		return $this->pdo->lastInsertId();
+		try{
+			$this->exec($sql, $params);
+			return $this->pdo->lastInsertId();
+		} catch (\Exception $e) {
+			throw $e;
+		}
 	}
 
 	/**
@@ -160,7 +165,7 @@ class SQL
 	 * This function escapes parameters with PDO::quote(), so they don't need to be
 	 * quoted or escaped prior to sending thru this function.
 	 */
-	public function makeUpdate($table, $parts, $condition)
+	public function makeUpdateOld($table, $parts, $condition)
 	{
 		$sql = "update $table set ";
 
@@ -175,7 +180,23 @@ class SQL
 		}
 		return $sql;
 	}
-	
+
+	public function makeUpdate($table, $parts, $condition)
+	{
+		$updates = [];
+
+		foreach($parts as $field => $value){
+			$updates[] = $field . ' = ' . $this->prepareValuesArray($value);
+		}
+
+		$sql = sprintf('update %s set %s', $table, join(', ', $updates));
+
+		if ($condition){
+			$sql .= ' where ' . $condition;
+		}
+		return $sql;
+	}
+
 	/**
 	 * Build an "insert into" sql query from an array.
 	 * @param string $table Name of table
@@ -185,7 +206,7 @@ class SQL
 	 * This function escapes parameters with PDO::quote(), so they don't need to be
 	 * quoted or escaped prior to sending thru this function.
 	 */
-	public function makeInsert($table, $parts)
+	public function makeInsertOld($table, $parts)
 	{
 		$sql = "insert into $table (";
 		$sql2 = '' ;
@@ -201,9 +222,18 @@ class SQL
 		}
 		$sql = preg_replace("/, $/", "", $sql);
 		$sql2 = preg_replace("/, $/", "", $sql2);
-		return $sql . ')values(' . $sql2 . ')';
+		return $sql . ') values (' . $sql2 . ')';
 	}
 
+	public function makeInsert($table, $parts = [])
+	{
+		$keys_string = join(', ', array_keys($parts));
+		$values = array_values($parts);
+		$quoted_values = array_map([$this, 'prepareValuesArray'], $values);
+		$values_string = join(', ', $quoted_values);
+
+		return sprintf('insert into %s (%s) values (%s)', $table, $keys_string, $values_string);
+	}
 	/**
 	 * Build a "replace into" sql query from an array.
 	 * @param string $table Name of table
@@ -229,7 +259,7 @@ class SQL
 		}
 		$sql = preg_replace("/, $/", "", $sql);
 		$sql2 = preg_replace("/, $/", "", $sql2);
-		return $sql . ')values(' . $sql2 . ')';
+		return $sql . ') values (' . $sql2 . ')';
 	}
 
 	public static function buildDsn($host, $dbname = null, $port = null, $prefix = 'mysql', $charset = 'utf8mb4')
@@ -298,6 +328,18 @@ class SQL
 		return $this->pdo;
 	}
 
+	public function quote($string)
+	{
+		return $this->pdo->quote($string);
+	}
+
+	public function prepareValuesArray($string){
+		if ($string === null){
+			return 'NULL';
+		} else {
+			return $this->quote($string);
+		}
+	}
 	/**
 	 * @param Exception $exception
 	 * @return SQL

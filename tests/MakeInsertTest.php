@@ -1,4 +1,5 @@
 <?php
+namespace Tests;
 use Tests\SQLTest;
 
 class MakeInsertTest extends SQLTest
@@ -12,7 +13,7 @@ class MakeInsertTest extends SQLTest
 			'mydate' => null
 		];
 
-		$expected = "insert into foo (mytext, mydate)values('Bar', NULL)";
+		$expected = "insert into foo (mytext, mydate) values ('Bar', NULL)";
 		$actual = $db->makeInsert('foo', $data);
 		$db->exec($actual);
 		$row = $db->query("select * from foo")->fetch();
@@ -31,7 +32,7 @@ class MakeInsertTest extends SQLTest
 			'mydate' => ''
 		];
 
-		$expected = "insert into foo (mytext, mydate)values('Bar', '')";
+		$expected = "insert into foo (mytext, mydate) values ('Bar', '')";
 		$actual = $db->makeInsert('foo', $data);
 
 		$db->exec($actual);
