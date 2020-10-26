@@ -1,4 +1,6 @@
 <?php
+namespace Tests;
+
 use Tests\SQLTest;
 
 class QueryTest extends SQLTest

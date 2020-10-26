@@ -1,37 +1,26 @@
 <?php
 namespace Tests;
 
-class MakeInsertTest extends SQLTest
+use Simpl\SQL;
+
+class MakeUpdateTest extends MakeSQLTest
 {
 	public function dataProvider()
 	{
 		$tests = [
-			"mydate should be null" => [
-				"insert into foo (mytext, mydate) values ('Bar', NULL)",
+			"test can update with a null value" => [
+				"update foo set mytext = 'Bar', mydate = NULL where id = 1",
 				[
 					'mytext' => 'Bar',
 					'mydate' => null
-				],
+				]
 			],
-			"mydate should be empty string" => [
-				"insert into foo (mytext, mydate) values ('Bar', '')",
+			"test can update with an empty string" => [
+				"update foo set mytext = 'Bar', mydate = '' where id = 1",
 				[
 					'mytext' => 'Bar',
 					'mydate' => ''
-				],
-
-			],
-			"myfloat should be 3.1415" => [
-				"insert into foo (myfloat) values (3.1415)",
-				[
-					'myfloat' => 3.1415
-				],
-			],
-			"myint should be 3" => [
-				"insert into foo (myint) values (3)",
-				[
-					'myint' => 3
-				],
+				]
 			]
 		];
 
@@ -45,12 +34,12 @@ class MakeInsertTest extends SQLTest
 	 * @param $data
 	 * @dataProvider dataProvider
 	 */
-	public function testInsert($expected, $data)
+	public function testUpdate($expected, $data)
 	{
-		$db = $this->connect();
+		$db = $this->getConnection();
 
 		# Does the generated SQL match expected?
-		$actual = $db->makeInsert('foo', $data);
+		$actual = $db->makeUpdate('foo', $data, 'id = 1');
 		$this->assertEquals($expected, $actual);
 
 		# Does executing the SQL return the expected result?

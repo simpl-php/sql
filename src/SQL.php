@@ -27,18 +27,24 @@ class SQL
 	 * @param bool $throw Should we throw exceptions? Useful for unit testing to disable throwing exceptions.
 	 * @throws Exception
 	 */
-	public function __construct($config, $dbname = null, $username = null, $password = null, $options = [], $throw = true)
-	{
+	public function __construct(
+		$config,
+		$dbname = null,
+		$username = null,
+		$password = null,
+		$options = [],
+		$throw = true
+	) {
 		$this->throw_exception = $throw;
 
 		$this->dsn = self::buildDsn($config, $dbname);
 
 		// Get options from the config array, if available.
-		if (empty($options) && isset($config['options'])){
+		if (empty($options) && isset($config['options'])) {
 			$options = $config['options'];
 		}
 
-		if (empty($options)){
+		if (empty($options)) {
 			$options = [
 				PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
 				PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -46,11 +52,11 @@ class SQL
 			];
 		}
 
-		if (empty($username) && isset($config['username'])){
+		if (empty($username) && isset($config['username'])) {
 			$username = $config['username'];
 		}
 
-		if (empty($password) && isset($config['password'])){
+		if (empty($password) && isset($config['password'])) {
 			$password = $config['password'];
 		}
 
@@ -143,11 +149,16 @@ class SQL
 	 * @param $sql
 	 * @param array $params
 	 * @return string
+	 * @throws Exception
 	 */
 	public function insert($sql, $params = array())
 	{
-		$result = $this->exec($sql, $params);
-		return $this->pdo->lastInsertId();
+		try {
+			$this->exec($sql, $params);
+			return $this->pdo->lastInsertId();
+		} catch (\Exception $e) {
+			throw $e;
+		}
 	}
 
 	/**
@@ -162,20 +173,20 @@ class SQL
 	 */
 	public function makeUpdate($table, $parts, $condition)
 	{
-		$sql = "update $table set ";
+		$updates = [];
 
-		foreach ($parts as $field => $val) {
-			$sql.="$field = " . $this->pdo->quote($val) . ", ";
+		foreach ($parts as $field => $value) {
+			$updates[] = $field . ' = ' . $this->prepareValuesArray($value);
 		}
 
-		$sql = preg_replace("/, $/", "", $sql);
+		$sql = sprintf('update %s set %s', $table, join(', ', $updates));
 
 		if ($condition) {
-			$sql.=' where ' . $condition;
+			$sql .= ' where ' . $condition;
 		}
 		return $sql;
 	}
-	
+
 	/**
 	 * Build an "insert into" sql query from an array.
 	 * @param string $table Name of table
@@ -185,25 +196,15 @@ class SQL
 	 * This function escapes parameters with PDO::quote(), so they don't need to be
 	 * quoted or escaped prior to sending thru this function.
 	 */
-	public function makeInsert($table, $parts)
+	public function makeInsert($table, $parts = [])
 	{
-		$sql = "insert into $table (";
-		$sql2 = '' ;
+		$keys_string = join(', ', array_keys($parts));
+		$values = array_values($parts);
+		$quoted_values = array_map([$this, 'prepareValuesArray'], $values);
+		$values_string = join(', ', $quoted_values);
 
-		foreach ($parts as $field => $val) {
-			$sql.=$field . ', ';
-
-			if ($val === null) {
-				$sql2.= 'NULL' . ", ";
-			} else {
-				$sql2.= $this->pdo->quote($val) . ", ";
-			}
-		}
-		$sql = preg_replace("/, $/", "", $sql);
-		$sql2 = preg_replace("/, $/", "", $sql2);
-		return $sql . ')values(' . $sql2 . ')';
+		return sprintf('insert into %s (%s) values (%s)', $table, $keys_string, $values_string);
 	}
-
 	/**
 	 * Build a "replace into" sql query from an array.
 	 * @param string $table Name of table
@@ -215,27 +216,17 @@ class SQL
 	 */
 	public function makeReplace($table, $parts)
 	{
-		$sql = "replace into $table (";
-		$sql2 = '';
+		$keys_string = join(', ', array_keys($parts));
+		$values = array_values($parts);
+		$quoted_values = array_map([$this, 'prepareValuesArray'], $values);
+		$values_string = join(', ', $quoted_values);
 
-		foreach ($parts as $field => $val) {
-			$sql.=$field . ', ';
-
-			if ($val === null) {
-				$sql2.= 'NULL' . ", ";
-			} else {
-				$sql2.= $this->pdo->quote($val) . ", ";
-			}
-		}
-		$sql = preg_replace("/, $/", "", $sql);
-		$sql2 = preg_replace("/, $/", "", $sql2);
-		return $sql . ')values(' . $sql2 . ')';
+		return sprintf('replace into %s (%s) values (%s)', $table, $keys_string, $values_string);
 	}
 
 	public static function buildDsn($host, $dbname = null, $port = null, $prefix = 'mysql', $charset = 'utf8mb4')
 	{
-		if (is_array($host))
-		{
+		if (is_array($host)) {
 			$dsn = self::buildDsnFromArray($host);
 		} elseif ($host == 'sqlite') {
 			$dsn = self::buildDsnFromArray(
@@ -270,8 +261,8 @@ class SQL
 
 		$parts = [];
 
-		if (preg_match('/sqlite/', $prefix)){
-			if (!isset($options['path'])){
+		if (preg_match('/sqlite/', $prefix)) {
+			if (!isset($options['path'])) {
 				throw new Exception("sqlite path must be set in options.");
 			}
 			return $prefix . ':' . $options['path'];
@@ -279,8 +270,8 @@ class SQL
 
 		$keys = ['unix_socket', 'host', 'port', 'dbname', 'charset'];
 
-		foreach($keys as $key){
-			if (isset($options[$key]) && !empty($options[$key])){
+		foreach ($keys as $key) {
+			if (isset($options[$key]) && !empty($options[$key])) {
 				$parts[$key] = sprintf('%s=%s', $key, $options[$key]);
 			}
 		}
@@ -298,6 +289,23 @@ class SQL
 		return $this->pdo;
 	}
 
+	public function quote($string)
+	{
+		if (is_int($string) || is_float($string)) {
+			return $string;
+		}
+
+		return $this->pdo->quote($string);
+	}
+
+	public function prepareValuesArray($string)
+	{
+		if ($string === null) {
+			return 'NULL';
+		} else {
+			return $this->quote($string);
+		}
+	}
 	/**
 	 * @param Exception $exception
 	 * @return SQL
@@ -307,9 +315,9 @@ class SQL
 	{
 		$this->exception = $exception;
 
-		if ($this->throw_exception){
+		if ($this->throw_exception) {
 			throw $exception;
-		} else{
+		} else {
 			return $this;
 		}
 	}
