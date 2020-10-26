@@ -38,10 +38,10 @@
             "vendor/bin/phpunit tests"
         ],
         "codesniffer": [
-            "vendor/bin/phpcs --standard=\"./PSR2Tabs.xml\" -p -v src"
+            "vendor/bin/phpcs --standard=\"./PSR2Tabs.xml\" -p -v src tests"
         ],
         "codefixer": [
-            "vendor/bin/phpcbf --standard=\"./PSR2Tabs.xml\" -p -v src"
+            "vendor/bin/phpcbf --standard=\"./PSR2Tabs.xml\" -p -v src tests"
         ]
     }
 }

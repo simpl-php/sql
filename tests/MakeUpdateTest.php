@@ -1,5 +1,6 @@
 <?php
 namespace Tests;
+
 use Simpl\SQL;
 
 class MakeUpdateTest extends MakeSQLTest
@@ -27,7 +28,8 @@ class MakeUpdateTest extends MakeSQLTest
 	}
 
 	/**
-	 * Ensure generated SQL matches expected and that we can exec the generated SQL and retrieve expected values from the database.
+	 * Ensure generated SQL matches expected and that we can exec the generated SQL and
+	 * retrieve expected values from the database.
 	 * @param $expected
 	 * @param $data
 	 * @dataProvider dataProvider
@@ -44,7 +46,7 @@ class MakeUpdateTest extends MakeSQLTest
 		$db->exec($actual);
 		$row = $db->query("select * from foo")->fetch();
 
-		foreach($data as $key=>$value){
+		foreach ($data as $key => $value) {
 			$this->assertEquals($row[$key], $value);
 		}
 	}

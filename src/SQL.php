@@ -27,18 +27,24 @@ class SQL
 	 * @param bool $throw Should we throw exceptions? Useful for unit testing to disable throwing exceptions.
 	 * @throws Exception
 	 */
-	public function __construct($config, $dbname = null, $username = null, $password = null, $options = [], $throw = true)
-	{
+	public function __construct(
+		$config,
+		$dbname = null,
+		$username = null,
+		$password = null,
+		$options = [],
+		$throw = true
+	) {
 		$this->throw_exception = $throw;
 
 		$this->dsn = self::buildDsn($config, $dbname);
 
 		// Get options from the config array, if available.
-		if (empty($options) && isset($config['options'])){
+		if (empty($options) && isset($config['options'])) {
 			$options = $config['options'];
 		}
 
-		if (empty($options)){
+		if (empty($options)) {
 			$options = [
 				PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
 				PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -46,11 +52,11 @@ class SQL
 			];
 		}
 
-		if (empty($username) && isset($config['username'])){
+		if (empty($username) && isset($config['username'])) {
 			$username = $config['username'];
 		}
 
-		if (empty($password) && isset($config['password'])){
+		if (empty($password) && isset($config['password'])) {
 			$password = $config['password'];
 		}
 
@@ -147,7 +153,7 @@ class SQL
 	 */
 	public function insert($sql, $params = array())
 	{
-		try{
+		try {
 			$this->exec($sql, $params);
 			return $this->pdo->lastInsertId();
 		} catch (\Exception $e) {
@@ -169,13 +175,13 @@ class SQL
 	{
 		$updates = [];
 
-		foreach($parts as $field => $value){
+		foreach ($parts as $field => $value) {
 			$updates[] = $field . ' = ' . $this->prepareValuesArray($value);
 		}
 
 		$sql = sprintf('update %s set %s', $table, join(', ', $updates));
 
-		if ($condition){
+		if ($condition) {
 			$sql .= ' where ' . $condition;
 		}
 		return $sql;
@@ -220,8 +226,7 @@ class SQL
 
 	public static function buildDsn($host, $dbname = null, $port = null, $prefix = 'mysql', $charset = 'utf8mb4')
 	{
-		if (is_array($host))
-		{
+		if (is_array($host)) {
 			$dsn = self::buildDsnFromArray($host);
 		} elseif ($host == 'sqlite') {
 			$dsn = self::buildDsnFromArray(
@@ -256,8 +261,8 @@ class SQL
 
 		$parts = [];
 
-		if (preg_match('/sqlite/', $prefix)){
-			if (!isset($options['path'])){
+		if (preg_match('/sqlite/', $prefix)) {
+			if (!isset($options['path'])) {
 				throw new Exception("sqlite path must be set in options.");
 			}
 			return $prefix . ':' . $options['path'];
@@ -265,8 +270,8 @@ class SQL
 
 		$keys = ['unix_socket', 'host', 'port', 'dbname', 'charset'];
 
-		foreach($keys as $key){
-			if (isset($options[$key]) && !empty($options[$key])){
+		foreach ($keys as $key) {
+			if (isset($options[$key]) && !empty($options[$key])) {
 				$parts[$key] = sprintf('%s=%s', $key, $options[$key]);
 			}
 		}
@@ -286,15 +291,16 @@ class SQL
 
 	public function quote($string)
 	{
-		if (is_int($string) || is_float($string)){
+		if (is_int($string) || is_float($string)) {
 			return $string;
 		}
 
 		return $this->pdo->quote($string);
 	}
 
-	public function prepareValuesArray($string){
-		if ($string === null){
+	public function prepareValuesArray($string)
+	{
+		if ($string === null) {
 			return 'NULL';
 		} else {
 			return $this->quote($string);
@@ -309,9 +315,9 @@ class SQL
 	{
 		$this->exception = $exception;
 
-		if ($this->throw_exception){
+		if ($this->throw_exception) {
 			throw $exception;
-		} else{
+		} else {
 			return $this;
 		}
 	}

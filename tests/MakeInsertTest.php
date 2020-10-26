@@ -39,7 +39,8 @@ class MakeInsertTest extends SQLTest
 	}
 
 	/**
-	 * Ensure generated SQL matches expected and that we can exec the generated SQL and retrieve expected values from the database.
+	 * Ensure generated SQL matches expected and that we can exec the generated SQL and
+	 * retrieve expected values from the database.
 	 * @param $expected
 	 * @param $data
 	 * @dataProvider dataProvider
@@ -56,7 +57,7 @@ class MakeInsertTest extends SQLTest
 		$db->exec($actual);
 		$row = $db->query("select * from foo")->fetch();
 
-		foreach($data as $key=>$value){
+		foreach ($data as $key => $value) {
 			$this->assertEquals($row[$key], $value);
 		}
 	}
