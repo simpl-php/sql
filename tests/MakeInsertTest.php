@@ -1,45 +1,63 @@
 <?php
 namespace Tests;
-use Tests\SQLTest;
 
 class MakeInsertTest extends SQLTest
 {
-	public function testCanInsertNullValue()
+	public function dataProvider()
 	{
-		$db = $this->connect();
+		$tests = [
+			"mydate should be null" => [
+				"insert into foo (mytext, mydate) values ('Bar', NULL)",
+				[
+					'mytext' => 'Bar',
+					'mydate' => null
+				],
+			],
+			"mydate should be empty string" => [
+				"insert into foo (mytext, mydate) values ('Bar', '')",
+				[
+					'mytext' => 'Bar',
+					'mydate' => ''
+				],
 
-		$data = [
-			'mytext' => 'Bar',
-			'mydate' => null
+			],
+			"myfloat should be 3.1415" => [
+				"insert into foo (myfloat) values (3.1415)",
+				[
+					'myfloat' => 3.1415
+				],
+			],
+			"myint should be 3" => [
+				"insert into foo (myint) values (3)",
+				[
+					'myint' => 3
+				],
+			]
 		];
 
-		$expected = "insert into foo (mytext, mydate) values ('Bar', NULL)";
-		$actual = $db->makeInsert('foo', $data);
-		$db->exec($actual);
-		$row = $db->query("select * from foo")->fetch();
-
-		$this->assertEquals($expected, $actual);
-		$this->assertEquals(null, $row['mydate'], 'mydate should be null');
-		$this->assertEquals('Bar', $row['mytext'], 'mytext should be Bar');
+		return $tests;
 	}
 
-	public function testCanInsertEmptyString()
+	/**
+	 * Ensure generated SQL matches expected and that we can exec the generated SQL and retrieve expected values from the database.
+	 * @param $expected
+	 * @param $data
+	 * @dataProvider dataProvider
+	 */
+	public function testInsert($expected, $data)
 	{
 		$db = $this->connect();
 
-		$data = [
-			'mytext' => 'Bar',
-			'mydate' => ''
-		];
-
-		$expected = "insert into foo (mytext, mydate) values ('Bar', '')";
+		# Does the generated SQL match expected?
 		$actual = $db->makeInsert('foo', $data);
+		$this->assertEquals($expected, $actual);
 
+		# Does executing the SQL return the expected result?
 		$db->exec($actual);
 		$row = $db->query("select * from foo")->fetch();
 
-		$this->assertEquals($expected, $actual);
-		$this->assertEquals('', $row['mydate'], 'mydate should be null');
-		$this->assertEquals('Bar', $row['mytext'], 'mytext should be Bar');
+		foreach($data as $key=>$value){
+			$this->assertEquals($row[$key], $value);
+		}
 	}
 }

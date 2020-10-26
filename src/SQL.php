@@ -165,22 +165,6 @@ class SQL
 	 * This function escapes parameters with PDO::quote(), so they don't need to be
 	 * quoted or escaped prior to sending thru this function.
 	 */
-	public function makeUpdateOld($table, $parts, $condition)
-	{
-		$sql = "update $table set ";
-
-		foreach ($parts as $field => $val) {
-			$sql.="$field = " . $this->pdo->quote($val) . ", ";
-		}
-
-		$sql = preg_replace("/, $/", "", $sql);
-
-		if ($condition) {
-			$sql.=' where ' . $condition;
-		}
-		return $sql;
-	}
-
 	public function makeUpdate($table, $parts, $condition)
 	{
 		$updates = [];
@@ -206,25 +190,6 @@ class SQL
 	 * This function escapes parameters with PDO::quote(), so they don't need to be
 	 * quoted or escaped prior to sending thru this function.
 	 */
-	public function makeInsertOld($table, $parts)
-	{
-		$sql = "insert into $table (";
-		$sql2 = '' ;
-
-		foreach ($parts as $field => $val) {
-			$sql.=$field . ', ';
-
-			if ($val === null) {
-				$sql2.= 'NULL' . ", ";
-			} else {
-				$sql2.= $this->pdo->quote($val) . ", ";
-			}
-		}
-		$sql = preg_replace("/, $/", "", $sql);
-		$sql2 = preg_replace("/, $/", "", $sql2);
-		return $sql . ') values (' . $sql2 . ')';
-	}
-
 	public function makeInsert($table, $parts = [])
 	{
 		$keys_string = join(', ', array_keys($parts));
@@ -245,21 +210,12 @@ class SQL
 	 */
 	public function makeReplace($table, $parts)
 	{
-		$sql = "replace into $table (";
-		$sql2 = '';
+		$keys_string = join(', ', array_keys($parts));
+		$values = array_values($parts);
+		$quoted_values = array_map([$this, 'prepareValuesArray'], $values);
+		$values_string = join(', ', $quoted_values);
 
-		foreach ($parts as $field => $val) {
-			$sql.=$field . ', ';
-
-			if ($val === null) {
-				$sql2.= 'NULL' . ", ";
-			} else {
-				$sql2.= $this->pdo->quote($val) . ", ";
-			}
-		}
-		$sql = preg_replace("/, $/", "", $sql);
-		$sql2 = preg_replace("/, $/", "", $sql2);
-		return $sql . ') values (' . $sql2 . ')';
+		return sprintf('replace into %s (%s) values (%s)', $table, $keys_string, $values_string);
 	}
 
 	public static function buildDsn($host, $dbname = null, $port = null, $prefix = 'mysql', $charset = 'utf8mb4')
@@ -330,6 +286,10 @@ class SQL
 
 	public function quote($string)
 	{
+		if (is_int($string) || is_float($string)){
+			return $string;
+		}
+
 		return $this->pdo->quote($string);
 	}
 

@@ -1,46 +1,53 @@
 <?php
 namespace Tests;
-use Tests\SQLTest;
+use Simpl\SQL;
 
-class MakeReplaceTest extends SQLTest
+class MakeReplaceTest extends MakeSQLTest
 {
-	public function testCanReplaceNullValue()
+	public function dataProvider()
 	{
-		$db = $this->connect();
-
-		$data = [
-			'mytext' => 'Bar',
-			'mydate' => null
+		$tests = [
+			"mydate should be null" => [
+				"replace into foo (id, mytext, mydate) values (1, 'Bar', NULL)",
+				[
+					'id' => 1,
+					'mytext' => 'Bar',
+					'mydate' => null
+				]
+			],
+			"mydate should be empty string" => [
+				"replace into foo (id, mytext, mydate) values (1, 'Bar', '')",
+				[
+					'id' => 1,
+					'mytext' => 'Bar',
+					'mydate' => ''
+				]
+			]
 		];
 
-		$expected = "replace into foo (mytext, mydate) values ('Bar', NULL)";
-		$actual = $db->makeReplace('foo', $data);
-
-		$db->exec($actual);
-		$row = $db->query("select * from foo")->fetch();
-
-		$this->assertEquals($expected, $actual);
-		$this->assertEquals(null, $row['mydate'], 'mydate should be null');
-		$this->assertEquals('Bar', $row['mytext'], 'mytext should be Bar');
+		return $tests;
 	}
 
-	public function testCanInsertEmptyString()
+	/**
+	 * Ensure generated SQL matches expected and that we can exec the generated SQL and retrieve expected values from the database.
+	 * @param $expected
+	 * @param $data
+	 * @dataProvider dataProvider
+	 */
+	public function testReplace($expected, $data)
 	{
-		$db = $this->connect();
+		$db = $this->getConnection();
 
-		$data = [
-			'mytext' => 'Bar',
-			'mydate' => ''
-		];
+		# Does the generated SQL match expected?
+		$actual = $db->makeReplace('foo', $data);
+		$this->assertEquals($expected, $actual);
 
-		$expected = "insert into foo (mytext, mydate) values ('Bar', '')";
-		$actual = $db->makeInsert('foo', $data);
-
+		# Does executing the SQL return the expected result?
 		$db->exec($actual);
 		$row = $db->query("select * from foo")->fetch();
 
-		$this->assertEquals($expected, $actual);
-		$this->assertEquals('', $row['mydate'], 'mydate should be null');
-		$this->assertEquals('Bar', $row['mytext'], 'mytext should be Bar');
+		foreach($data as $key=>$value){
+			$this->assertEquals($row[$key], $value);
+		}
 	}
 }
